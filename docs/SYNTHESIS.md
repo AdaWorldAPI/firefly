@@ -1,341 +1,289 @@
-# 🔥 SYNTHESIS: The Stack Already Exists
+# 🔥 SYNTHESIS: Consolidate Everything INTO Firefly
 
-## THE REVELATION
+## THE PLAN
 
-We don't need to build from scratch. The pieces exist across multiple repos:
+**Firefly becomes THE unified execution layer.** We SCRAPE code FROM other repos INTO firefly. No imports, no dependencies - one consolidated codebase.
+
+```
+SOURCE REPOS                          TARGET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+dragonfly-vsa/src/ ─────┐
+  pure_bitpacked_vsa.py │
+  mrna_transport.py     │
+  ladybug_store.py      │
+  duckdb_substrate.py   ├───────►  firefly/
+  grounded_graph.py     │            (consolidated)
+  cognitive_orchestrator│
+                        │
+vsa_flow/ ──────────────┤
+  transport/wire.py     │
+  core/mrna.py          │
+                        │
+rubberduck/ ────────────┤
+  parse/ruby.py         │
+  cli.py                │
+                        │
+agi-chat/ ──────────────┤
+  ladybug*.py           │
+  graph*.py             │
+                        │
+bighorn/ ───────────────┘
+  agi_stack/
+  consciousness/
+```
+
+---
+
+## FIREFLY: THE CONSOLIDATED STACK
+
+After scraping, firefly will contain:
+
+```
+firefly/
+├── BOOT.md
+│
+├── core/                              # FROM dragonfly-vsa
+│   ├── vsa.py                         # pure_bitpacked_vsa.py
+│   ├── hamming.py                     # 10K ops, bind, bundle, similarity
+│   ├── projection.py                  # Jina 1024 → 10K bits
+│   ├── cam.py                         # Content-addressable memory
+│   └── mexican_hat.py                 # Resonance cleaning
+│
+├── dto/                               # FROM dragonfly-vsa + new
+│   ├── node.py                        # FireflyNode (1.25KB)
+│   ├── edge.py                        # FireflyEdge (XOR binding)
+│   ├── packet.py                      # mRNA packet
+│   ├── gestalt.py                     # I-Thou-It
+│   └── capsule.py                     # State capsules
+│
+├── transport/                         # FROM vsa_flow
+│   ├── wire.py                        # Binary mRNA protocol
+│   ├── envelope.py                    # Pack/unpack
+│   ├── routing.py                     # Hamming-based routing
+│   └── queue.py                       # Redis streams
+│
+├── storage/                           # FROM dragonfly-vsa + agi-chat
+│   ├── trinity.py                     # Unified interface
+│   ├── lance.py                       # LanceDB vectors
+│   ├── duck.py                        # DuckDB catalog
+│   ├── kuzu.py                        # Kuzu graph (ladybug)
+│   └── substrate.py                   # duckdb_substrate.py
+│
+├── compiler/                          # FROM rubberduck
+│   ├── ruby.py                        # Rails models
+│   ├── python.py                      # Django/SQLAlchemy
+│   ├── universal.py                   # Tree-sitter fallback
+│   └── emit.py                        # Output to storage
+│
+├── executor/                          # FROM dragonfly-vsa + bighorn
+│   ├── engine.py                      # Graph execution
+│   ├── glow.py                        # Visualization
+│   ├── trace.py                       # Execution tracing
+│   └── orchestrator.py                # cognitive_orchestrator.py
+│
+├── reasoning/                         # FROM bighorn
+│   ├── explain.py                     # Why did this fail?
+│   ├── suggest.py                     # How to fix?
+│   ├── optimize.py                    # Make it faster
+│   └── generate.py                    # Compose new programs
+│
+├── consciousness/                     # FROM ada-consciousness + bighorn
+│   ├── layers.py                      # 7-layer model
+│   ├── membrane.py                    # τ/σ/q ↔ 10K
+│   └── state.py                       # State encoding
+│
+├── server.py                          # FastAPI endpoints
+├── cli.py                             # CLI interface
+└── tests/
+```
+
+---
+
+## SCRAPING MAP
+
+### Phase 1: Core (FROM dragonfly-vsa)
+
+| Source | Target | Action |
+|--------|--------|--------|
+| `dragonfly-vsa/src/pure_bitpacked_vsa.py` | `firefly/core/vsa.py` | Copy + adapt |
+| `dragonfly-vsa/src/cam.py` | `firefly/core/cam.py` | Copy |
+| `dragonfly-vsa/src/meaning_cam.py` | `firefly/core/cam.py` | Merge |
+| `dragonfly-vsa/src/capsule_*.py` | `firefly/dto/capsule.py` | Consolidate |
+
+### Phase 2: Transport (FROM vsa_flow)
+
+| Source | Target | Action |
+|--------|--------|--------|
+| `vsa_flow/transport/wire.py` | `firefly/transport/wire.py` | Copy + adapt |
+| `vsa_flow/core/mrna.py` | `firefly/dto/packet.py` | Merge |
+
+### Phase 3: Storage (FROM dragonfly-vsa + agi-chat)
+
+| Source | Target | Action |
+|--------|--------|--------|
+| `dragonfly-vsa/src/ladybug_store.py` | `firefly/storage/kuzu.py` | Copy + adapt |
+| `dragonfly-vsa/src/ladybug_store_v2.py` | `firefly/storage/kuzu.py` | Merge best |
+| `dragonfly-vsa/src/duckdb_substrate.py` | `firefly/storage/substrate.py` | Copy |
+| `dragonfly-vsa/src/semantic_graph_store.py` | `firefly/storage/trinity.py` | Integrate |
+| `agi-chat/src/ladybug*.py` | `firefly/storage/kuzu.py` | Check for patterns |
+
+### Phase 4: Compiler (FROM rubberduck)
+
+| Source | Target | Action |
+|--------|--------|--------|
+| `rubberduck/parse/*.py` | `firefly/compiler/*.py` | Copy |
+| `rubberduck/cli.py` | `firefly/cli.py` | Merge |
+
+### Phase 5: Executor (FROM dragonfly-vsa)
+
+| Source | Target | Action |
+|--------|--------|--------|
+| `dragonfly-vsa/src/grounded_graph.py` | `firefly/executor/engine.py` | Copy + adapt |
+| `dragonfly-vsa/src/cognitive_orchestrator.py` | `firefly/executor/orchestrator.py` | Copy |
+
+### Phase 6: Reasoning (FROM bighorn)
+
+| Source | Target | Action |
+|--------|--------|--------|
+| `bighorn/agi_stack/*.py` | `firefly/reasoning/*.py` | Extract patterns |
+| `bighorn/consciousness/*.py` | `firefly/consciousness/*.py` | Extract patterns |
+
+---
+
+## THE OUTPUT STACK
+
+After consolidation:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         A2UI                                     │
-│   AdaWorldAPI/A2UI                                               │
-│   ├── a2a_agents/        Agent framework                         │
-│   ├── renderers/         Display components                      │
-│   └── specification/     Protocol spec                           │
-│   🖥️  THIN CLIENT (needs Hamming packet input)                   │
+│   Receives mRNA packets from Firefly                             │
+│   Decodes → Renders                                              │
+│   🖥️  THIN CLIENT                                                │
 └─────────────────────────────────────────────────────────────────┘
                               ▲
                               │ application/x-mrna-10k
                               │
 ┌─────────────────────────────────────────────────────────────────┐
-│                        vsa_flow                                  │
-│   AdaWorldAPI/vsa_flow                                           │
-│   ├── transport/wire.py  Envelope pack/unpack                    │
-│   ├── core/mrna.py       mRNA vectors                            │
-│   └── api/               HTTP endpoints                          │
-│   🧬  mRNA TRANSPORT (wire protocol DONE)                        │
+│                        🔥 FIREFLY                                │
+│                                                                 │
+│   EVERYTHING LIVES HERE:                                        │
+│   • Core VSA ops (from dragonfly)                               │
+│   • Transport (from vsa_flow)                                   │
+│   • Storage (from dragonfly + agi-chat)                         │
+│   • Compiler (from rubberduck)                                  │
+│   • Executor (from dragonfly)                                   │
+│   • Reasoning (from bighorn)                                    │
+│   • Consciousness (from ada-consciousness)                      │
+│                                                                 │
+│   ONE REPO. ONE TRUTH.                                          │
 └─────────────────────────────────────────────────────────────────┘
                               ▲
                               │
 ┌─────────────────────────────────────────────────────────────────┐
-│                        firefly                                   │
-│   AdaWorldAPI/firefly                                            │
-│   ├── core/              Hamming ops (basic)                     │
-│   ├── dto/               Node, Edge, Packet                      │
-│   ├── executor/          Glow engine                             │
-│   └── storage/           Trinity (Lance/Duck/Kuzu)               │
-│   🔥  SUBSTRATE (needs integration with dragonfly)               │
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │
-┌─────────────────────────────────────────────────────────────────┐
-│                       rubberduck                                 │
-│   AdaWorldAPI/rubberduck                                         │
-│   ├── parse/             Ruby parser (started)                   │
-│   └── cli.py             CLI interface                           │
-│   🦆  COMPILER (needs more language support)                     │
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │
-┌─────────────────────────────────────────────────────────────────┐
-│                      dragonfly-vsa                               │
-│   AdaWorldAPI/dragonfly-vsa                                      │
-│   ├── src/pure_bitpacked_vsa.py    10K Hamming ops              │
-│   ├── src/mrna_transport.py        mRNA handling                │
-│   ├── src/ladybug_store.py         Graph storage                │
-│   ├── src/duckdb_substrate.py      DuckDB integration           │
-│   ├── src/semantic_graph_store.py  Graph patterns               │
-│   ├── src/grounded_graph.py        Executable graph             │
-│   └── src/cognitive_orchestrator.py Orchestration               │
-│   🐉  THE FOUNDATION (most complete)                             │
+│                     SOURCE CODE                                  │
+│   Ruby, Python, Java, COBOL                                      │
+│   📜                                                             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## WHAT EXISTS (Don't Rebuild)
+## WHAT HAPPENS TO SOURCE REPOS?
 
-### 1. dragonfly-vsa - THE MATH ✅
+After scraping into Firefly:
 
-**Location:** `AdaWorldAPI/dragonfly-vsa/src/`
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `pure_bitpacked_vsa.py` | 10K Hamming, bind/bundle/similarity | ✅ Complete |
-| `mrna_transport.py` | mRNA packet handling | ✅ Complete |
-| `ladybug_store.py` | Kuzu graph storage | ✅ Complete |
-| `ladybug_store_v2.py` | Improved graph storage | ✅ Complete |
-| `duckdb_substrate.py` | DuckDB integration | ✅ Complete |
-| `semantic_graph_store.py` | Semantic graph patterns | ✅ Complete |
-| `grounded_graph.py` | Executable graphs | ✅ Complete |
-| `cognitive_orchestrator.py` | Multi-agent orchestration | ✅ Complete |
-| `cam.py` | Content-addressable memory | ✅ Complete |
-| `capsule_*.py` | State capsules | ✅ Complete |
-
-**Action:** Import into firefly/rubberduck, don't rewrite
+| Repo | Fate |
+|------|------|
+| **dragonfly-vsa** | Archive or keep as "reference implementation" |
+| **vsa_flow** | Archive - transport now in firefly |
+| **rubberduck** | Archive - compiler now in firefly |
+| **agi-chat** | Archive - ladybug now in firefly |
+| **bighorn** | Archive - reasoning now in firefly |
+| **A2UI** | KEEP - separate thin client |
 
 ---
 
-### 2. vsa_flow - THE TRANSPORT ✅
-
-**Location:** `AdaWorldAPI/vsa_flow/`
-
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `transport/wire.py` | Binary mRNA protocol | ✅ Complete |
-| `core/mrna.py` | mRNA vector type | ✅ Complete |
-| `/mrna` endpoint | Native binary POST | ✅ Complete |
-| Envelope format | Pack/unpack | ✅ Complete |
-
-**Wire Format:**
-```
-Content-Type: application/x-mrna-10k
-
-[4 bytes: "mRNA"]
-[4 bytes: version, flags]
-[1250 bytes: 10KD vector]
-[optional: verb, target, reply_to]
-```
-
-**Action:** Use as-is for Firefly transport
-
----
-
-### 3. rubberduck - THE COMPILER 🔄
-
-**Location:** `AdaWorldAPI/rubberduck/`
-
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `parse/` | Language parsers | 🔄 Ruby started |
-| `cli.py` | CLI interface | ✅ Basic |
-| Output format | Trinity storage | 📋 Needs work |
-
-**Action:** Extend parser, connect to dragonfly-vsa ops
-
----
-
-### 4. firefly - THE SUBSTRATE 🔄
-
-**Location:** `AdaWorldAPI/firefly/`
-
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `core/` | Hamming ops | ⚠️ Duplicates dragonfly |
-| `dto/` | Node, Edge, Packet | ✅ Good |
-| `executor/` | Glow engine | ✅ Basic |
-| `storage/` | Trinity wrapper | ✅ Basic |
-| `reasoning/` | AGI layer | 📋 Not started |
-
-**Action:** Replace core/ with dragonfly imports, add reasoning
-
----
-
-### 5. A2UI - THE DISPLAY 📋
-
-**Location:** `AdaWorldAPI/A2UI/`
-
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `a2a_agents/` | Agent framework | ✅ Exists |
-| `renderers/` | UI components | ✅ Exists |
-| `specification/` | Protocol spec | ✅ Exists |
-| mRNA input | Hamming packet decode | 📋 Not started |
-
-**Action:** Add mRNA decoder, connect to vsa_flow
-
----
-
-## THE INTEGRATION TASK
-
-### Phase 1: UNIFY CORE
-
-```python
-# firefly/core/__init__.py - REPLACE with imports
-
-from dragonfly_vsa.pure_bitpacked_vsa import (
-    bind, bundle, similarity, hamming_distance,
-    project_to_10k, DIM, CB
-)
-from dragonfly_vsa.mrna_transport import mRNA, Packet
-from dragonfly_vsa.ladybug_store import LadybugStore
-from dragonfly_vsa.duckdb_substrate import DuckDBSubstrate
-```
-
-### Phase 2: CONNECT RUBBERDUCK → DRAGONFLY
-
-```python
-# rubberduck/emit/dragonfly.py
-
-from dragonfly_vsa.pure_bitpacked_vsa import project_to_10k, bind, bundle
-from dragonfly_vsa.ladybug_store import LadybugStore
-
-async def emit_node(node_data, jina_embedding):
-    """Emit compiled node to dragonfly storage."""
-    resonance = project_to_10k(jina_embedding)
-    # ... store via LadybugStore
-```
-
-### Phase 3: CONNECT FIREFLY → VSA_FLOW
-
-```python
-# firefly/transport/mrna.py
-
-from vsa_flow.transport.wire import Envelope, CONTENT_TYPE
-from vsa_flow.core.mrna import mRNA
-
-async def send_execution(target_url, packet):
-    """Send execution via mRNA transport."""
-    envelope = Envelope(vector=packet.resonance)
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            target_url,
-            content=envelope.pack(),
-            headers={"Content-Type": CONTENT_TYPE}
-        )
-```
-
-### Phase 4: CONNECT A2UI ← VSA_FLOW
-
-```typescript
-// a2ui/src/mrna_decoder.ts
-
-async function receiveMRNA(data: ArrayBuffer): RenderInstruction {
-    const view = new DataView(data);
-    
-    // Verify magic
-    const magic = new TextDecoder().decode(data.slice(0, 4));
-    if (magic !== 'mRNA') throw new Error('Invalid packet');
-    
-    // Extract vector
-    const vector = new Uint8Array(data.slice(8, 8 + 1250));
-    
-    // Decode I-Thou-It
-    const content = unbind(vector, ROLE_CONTENT);
-    const style = unbind(vector, ROLE_STYLE);
-    const position = unbind(vector, ROLE_POSITION);
-    
-    return { content, style, position };
-}
-```
-
----
-
-## REPO RELATIONSHIPS
-
-```
-dragonfly-vsa (FOUNDATION)
-    │
-    ├──► firefly (imports core ops)
-    │       │
-    │       └──► reasoning/ (AGI layer)
-    │
-    ├──► rubberduck (imports storage)
-    │       │
-    │       └──► emit to firefly format
-    │
-    └──► vsa_flow (imports mRNA)
-            │
-            └──► A2UI (receives packets)
-```
-
----
-
-## THE PROMPT FOR CLAUDE CODE
+## CLAUDE CODE PROMPT
 
 ```markdown
-# FIREFLY INTEGRATION TASK
+# 🔥 FIREFLY CONSOLIDATION TASK
 
-## DON'T BUILD - INTEGRATE
+## MISSION
 
-The pieces exist. Connect them:
+Scrape execution code FROM other repos INTO firefly.
+Firefly becomes the single source of truth.
 
-1. **dragonfly-vsa** has the math (pure_bitpacked_vsa.py)
-2. **vsa_flow** has the transport (wire.py)
-3. **rubberduck** has the compiler skeleton
-4. **firefly** has the executor skeleton
-5. **A2UI** has the renderer skeleton
+## REPOS TO SCRAPE
 
-## TASK
-
-1. Make firefly import from dragonfly-vsa (not duplicate)
-2. Make rubberduck emit to dragonfly storage
-3. Make firefly transport use vsa_flow wire format
-4. Make A2UI decode mRNA packets
-
-## REPOS
-
-Clone all:
 ```bash
 git clone https://github.com/AdaWorldAPI/dragonfly-vsa
 git clone https://github.com/AdaWorldAPI/vsa_flow
 git clone https://github.com/AdaWorldAPI/rubberduck
-git clone https://github.com/AdaWorldAPI/firefly
-git clone https://github.com/AdaWorldAPI/A2UI
+git clone https://github.com/AdaWorldAPI/agi-chat
+git clone https://github.com/AdaWorldAPI/bighorn
+git clone https://github.com/AdaWorldAPI/ada-consciousness
+git clone https://github.com/AdaWorldAPI/firefly  # TARGET
 ```
+
+## SCRAPING ORDER
+
+1. **Core** (dragonfly-vsa → firefly/core/)
+   - pure_bitpacked_vsa.py → vsa.py
+   - cam.py → cam.py
+   - capsule_*.py → dto/capsule.py
+
+2. **Transport** (vsa_flow → firefly/transport/)
+   - wire.py → wire.py
+   - mrna.py → dto/packet.py
+
+3. **Storage** (dragonfly-vsa + agi-chat → firefly/storage/)
+   - ladybug_store.py → kuzu.py
+   - duckdb_substrate.py → substrate.py
+
+4. **Compiler** (rubberduck → firefly/compiler/)
+   - parse/*.py → compiler/*.py
+
+5. **Executor** (dragonfly-vsa → firefly/executor/)
+   - grounded_graph.py → engine.py
+   - cognitive_orchestrator.py → orchestrator.py
+
+6. **Reasoning** (bighorn → firefly/reasoning/)
+   - agi_stack/*.py → reasoning/*.py
+
+## RULES
+
+- COPY, don't import
+- Adapt to firefly structure
+- Remove external dependencies
+- One unified codebase
 
 ## SUCCESS
 
-- firefly/core/ imports dragonfly, no duplication
-- rubberduck emits 1.25KB nodes via dragonfly
-- firefly sends mRNA packets via vsa_flow
-- A2UI renders from mRNA decode
+- All execution code in firefly/
+- No cross-repo imports
+- Tests pass
+- CLI works: `firefly compile`, `firefly execute`
 
-🔥 Wire the stack.
+🔥 Consolidate the stack.
 ```
 
 ---
 
-## THE STACK (Final Form)
+## THE EQUATION (Final)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  SOURCE CODE                                                     │
-│  Ruby, Python, Java, COBOL                                       │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  🦆 RUBBERDUCK                                                   │
-│  Compiles → 1.25KB nodes                                         │
-│  Uses: dragonfly-vsa/pure_bitpacked_vsa.py                       │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  🐉 DRAGONFLY-VSA (shared library)                               │
-│  10K Hamming | mRNA | Storage | CAM                              │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  🔥 FIREFLY                                                      │
-│  Executes graphs | Reasons | Glows                               │
-│  Uses: dragonfly-vsa/*, vsa_flow/transport                       │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  🧬 VSA_FLOW                                                     │
-│  application/x-mrna-10k transport                                │
-│  UDP of distributed AI                                           │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  🖥️ A2UI                                                         │
-│  Thin client | Decode → Render                                   │
-│  No logic, just display                                          │
-└─────────────────────────────────────────────────────────────────┘
+SCATTERED                           UNIFIED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+dragonfly-vsa  ──┐
+vsa_flow       ──┤
+rubberduck     ──┼───► 🔥 FIREFLY ───► A2UI
+agi-chat       ──┤        │
+bighorn        ──┘        │
+                          ▼
+                        A G I
 ```
 
-**Don't build. Wire.**
+**One repo to rule them all.** 🔥
