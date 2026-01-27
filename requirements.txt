@@ -1,0 +1,23 @@
+# Firefly: Bioluminescent Code Execution
+# Core dependencies
+
+# Vectors & Hamming
+numpy>=1.24.0
+
+# Storage Trinity
+lancedb>=0.4.0
+duckdb>=0.9.0
+kuzu>=0.1.0
+
+# CLI
+click>=8.0.0
+
+# API Server (optional)
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Redis transport (optional)
+httpx>=0.24.0
+
+# Embeddings (optional, for semantic vectors)
+# jina>=3.0.0
