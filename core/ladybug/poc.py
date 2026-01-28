@@ -735,3 +735,11 @@ def run_all():
 
 if __name__ == "__main__":
     run_all()
+
+    # L11: BUTTERFLY CAUSALITY
+    try:
+        from l11_butterfly import poc_l11_butterfly
+        poc_l11_butterfly()
+        results.append(("L11: BUTTERFLY", "✓"))
+    except Exception as e:
+        results.append(("L11: BUTTERFLY", f"✗ {e}"))
