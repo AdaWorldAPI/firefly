@@ -1,59 +1,98 @@
-// 10K Hamming Operations - Go
-package hamming
+// LadybugDB Hamming Operations - Go
+// Same XOR + POPCOUNT as Python, TypeScript, Rust, C...
+
+package ladybug
 
 import (
+    "crypto/sha256"
+    "encoding/binary"
+    "encoding/hex"
+    "fmt"
     "math/bits"
     "sort"
 )
 
 const (
-    DIM     = 10000
-    DIM_U64 = 157
+    DIM      = 10000
+    DIM_U64  = 157
     LAST_MASK = (1 << 16) - 1
 )
 
-type Vector [DIM_U64]uint64
+type HammingVector struct {
+    Data [DIM_U64]uint64
+}
 
-func Hamming(a, b *Vector) int {
+func NewHammingVector() *HammingVector {
+    return &HammingVector{}
+}
+
+func FromSeed(seed string) *HammingVector {
+    v := &HammingVector{}
+    for i := 0; i < DIM_U64; i++ {
+        input := fmt.Sprintf("%s:%d", seed, i)
+        hash := sha256.Sum256([]byte(input))
+        v.Data[i] = binary.LittleEndian.Uint64(hash[:8])
+    }
+    v.Data[DIM_U64-1] &= LAST_MASK
+    return v
+}
+
+func (v *HammingVector) Xor(other *HammingVector) *HammingVector {
+    result := &HammingVector{}
+    for i := 0; i < DIM_U64; i++ {
+        result.Data[i] = v.Data[i] ^ other.Data[i]
+    }
+    result.Data[DIM_U64-1] &= LAST_MASK
+    return result
+}
+
+func (v *HammingVector) Hamming(other *HammingVector) int {
     total := 0
     for i := 0; i < DIM_U64; i++ {
-        total += bits.OnesCount64(a[i] ^ b[i])
+        total += bits.OnesCount64(v.Data[i] ^ other.Data[i])
     }
     return total
 }
 
-func Similarity(a, b *Vector) float64 {
-    return 1.0 - float64(Hamming(a, b))/float64(DIM)
+func (v *HammingVector) Similarity(other *HammingVector) float64 {
+    return 1.0 - float64(v.Hamming(other))/float64(DIM)
 }
 
-func XorBind(a, b *Vector) Vector {
-    var result Vector
+func (v *HammingVector) ToHex() string {
+    bytes := make([]byte, DIM_U64*8)
     for i := 0; i < DIM_U64; i++ {
-        result[i] = a[i] ^ b[i]
+        binary.LittleEndian.PutUint64(bytes[i*8:], v.Data[i])
     }
-    result[DIM_U64-1] &= LAST_MASK
-    return result
+    return hex.EncodeToString(bytes)
 }
 
-func BatchHamming(query *Vector, corpus []Vector) []int {
-    results := make([]int, len(corpus))
-    for i := range corpus {
-        results[i] = Hamming(query, &corpus[i])
+func FromHex(h string) (*HammingVector, error) {
+    bytes, err := hex.DecodeString(h)
+    if err != nil {
+        return nil, err
     }
-    return results
+    v := &HammingVector{}
+    for i := 0; i < DIM_U64; i++ {
+        v.Data[i] = binary.LittleEndian.Uint64(bytes[i*8:])
+    }
+    return v, nil
 }
 
-type Match struct {
+func Fingerprint(name, signature, body string) *HammingVector {
+    return FromSeed(fmt.Sprintf("%s::%s::%s", name, signature, body))
+}
+
+type ResonanceResult struct {
     Index      int
     Similarity float64
 }
 
-func Resonate(query *Vector, corpus []Vector, threshold float64) []Match {
-    var results []Match
-    for i := range corpus {
-        sim := Similarity(query, &corpus[i])
+func Resonate(query *HammingVector, corpus []*HammingVector, threshold float64) []ResonanceResult {
+    var results []ResonanceResult
+    for i, v := range corpus {
+        sim := query.Similarity(v)
         if sim >= threshold {
-            results = append(results, Match{i, sim})
+            results = append(results, ResonanceResult{i, sim})
         }
     }
     sort.Slice(results, func(i, j int) bool {
