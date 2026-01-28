@@ -1,55 +1,85 @@
 /**
- * 10K Hamming Operations - TypeScript
- * Uses BigInt for 64-bit operations
+ * LadybugDB Hamming Operations - TypeScript
+ * Same XOR + POPCOUNT as Python, Rust, Go, C...
  */
 
 const DIM = 10_000;
 const DIM_U64 = 157;
 const LAST_MASK = BigInt((1 << 16) - 1);
 
-function popcount64(x: bigint): number {
-    x = x - ((x >> 1n) & 0x5555555555555555n);
-    x = (x & 0x3333333333333333n) + ((x >> 2n) & 0x3333333333333333n);
-    x = (x + (x >> 4n)) & 0x0F0F0F0F0F0F0F0Fn;
-    return Number((x * 0x0101010101010101n) >> 56n) & 0xFF;
-}
+export class HammingVector {
+  data: BigUint64Array;
 
-export function hamming(a: bigint[], b: bigint[]): number {
-    let total = 0;
+  constructor(data?: BigUint64Array) {
+    this.data = data ?? new BigUint64Array(DIM_U64);
+  }
+
+  static async fromSeed(seed: string): Promise<HammingVector> {
+    const data = new BigUint64Array(DIM_U64);
+    const encoder = new TextEncoder();
+    
     for (let i = 0; i < DIM_U64; i++) {
-        total += popcount64(a[i] ^ b[i]);
+      const input = encoder.encode(`${seed}:${i}`);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', input);
+      const view = new DataView(hashBuffer);
+      data[i] = view.getBigUint64(0, true);
     }
-    return total;
-}
+    data[DIM_U64 - 1] &= LAST_MASK;
+    return new HammingVector(data);
+  }
 
-export function similarity(a: bigint[], b: bigint[]): number {
-    return 1.0 - hamming(a, b) / DIM;
-}
-
-export function xorBind(a: bigint[], b: bigint[]): bigint[] {
-    const result: bigint[] = new Array(DIM_U64);
+  xor(other: HammingVector): HammingVector {
+    const result = new BigUint64Array(DIM_U64);
     for (let i = 0; i < DIM_U64; i++) {
-        result[i] = a[i] ^ b[i];
+      result[i] = this.data[i] ^ other.data[i];
     }
     result[DIM_U64 - 1] &= LAST_MASK;
-    return result;
+    return new HammingVector(result);
+  }
+
+  hamming(other: HammingVector): number {
+    let total = 0;
+    for (let i = 0; i < DIM_U64; i++) {
+      let x = this.data[i] ^ other.data[i];
+      while (x > 0n) {
+        total += Number(x & 1n);
+        x >>= 1n;
+      }
+    }
+    return total;
+  }
+
+  similarity(other: HammingVector): number {
+    return 1.0 - this.hamming(other) / DIM;
+  }
+
+  toHex(): string {
+    const bytes = new Uint8Array(this.data.buffer);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  static fromHex(hex: string): HammingVector {
+    const bytes = new Uint8Array(hex.match(/.{2}/g)!.map(b => parseInt(b, 16)));
+    return new HammingVector(new BigUint64Array(bytes.buffer));
+  }
 }
 
-export function batchHamming(query: bigint[], corpus: bigint[][]): number[] {
-    return corpus.map(vec => hamming(query, vec));
+export async function fingerprint(name: string, signature: string, body: string): Promise<HammingVector> {
+  return HammingVector.fromSeed(`${name}::${signature}::${body}`);
 }
 
 export function resonate(
-    query: bigint[], 
-    corpus: bigint[][], 
-    threshold: number = 0.5
-): [number, number][] {
-    const results: [number, number][] = [];
-    for (let i = 0; i < corpus.length; i++) {
-        const sim = similarity(query, corpus[i]);
-        if (sim >= threshold) {
-            results.push([i, sim]);
-        }
+  query: HammingVector, 
+  corpus: HammingVector[], 
+  threshold: number = 0.5
+): Array<[number, number]> {
+  const results: Array<[number, number]> = [];
+  for (let i = 0; i < corpus.length; i++) {
+    const sim = query.similarity(corpus[i]);
+    if (sim >= threshold) {
+      results.push([i, sim]);
     }
-    return results.sort((a, b) => b[1] - a[1]);
+  }
+  results.sort((a, b) => b[1] - a[1]);
+  return results;
 }
