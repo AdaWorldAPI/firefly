@@ -7,3 +7,7 @@ healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+# Force PORT=8080 to match EXPOSE and healthcheck
+[deploy.env]
+PORT = "8080"
