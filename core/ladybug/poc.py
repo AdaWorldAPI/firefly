@@ -677,6 +677,16 @@ def run_all():
     except Exception as e:
         results.append(("L5: PARSE", f"✗ {e}"))
     
+    # L6: NARS (import from separate module)
+    try:
+        import sys
+        sys.path.insert(0, '/home/claude/ladybugdb/poc')
+        from l6_nars import poc_l6_nars
+        poc_l6_nars()
+        results.append(("L6: NARS", "✓"))
+    except Exception as e:
+        results.append(("L6: NARS", f"✗ {e}"))
+    
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
