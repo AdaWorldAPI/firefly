@@ -9,6 +9,7 @@ All three share data via Apache Arrow (zero-copy).
 """
 
 import os
+import shutil
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
@@ -126,37 +127,50 @@ class FireflyStore:
         if not HAS_KUZU:
             print("⚠️  Kuzu not installed. Graph traversal disabled.")
             self.kuzu = None
+            self.kuzu_db = None
             return
             
         kuzu_path = self.path / "kuzu"
-        kuzu_path.mkdir(exist_ok=True)
         
-        self.kuzu_db = kuzu.Database(str(kuzu_path))
-        self.kuzu = kuzu.Connection(self.kuzu_db)
+        # Kuzu needs to create the directory itself.
+        # If an empty/corrupted directory exists from a failed init, remove it.
+        if kuzu_path.exists():
+            # Check if it's a valid Kuzu database (has system files)
+            if not (kuzu_path / "catalog.wip").exists() and not (kuzu_path / "catalog").exists():
+                print(f"⚠️  Removing invalid Kuzu directory: {kuzu_path}")
+                shutil.rmtree(kuzu_path)
         
-        # Create node table
         try:
-            self.kuzu.execute("""
-                CREATE NODE TABLE IF NOT EXISTS Node(
-                    id STRING PRIMARY KEY,
-                    type STRING,
-                    executor STRING
-                )
-            """)
-        except:
-            pass  # Table might already exist
-        
-        # Create edge table
-        try:
-            self.kuzu.execute("""
-                CREATE REL TABLE IF NOT EXISTS FLOWS(
-                    FROM Node TO Node,
-                    type STRING,
-                    condition STRING
-                )
-            """)
-        except:
-            pass
+            self.kuzu_db = kuzu.Database(str(kuzu_path))
+            self.kuzu = kuzu.Connection(self.kuzu_db)
+            
+            # Create node table
+            try:
+                self.kuzu.execute("""
+                    CREATE NODE TABLE IF NOT EXISTS Node(
+                        id STRING PRIMARY KEY,
+                        type STRING,
+                        executor STRING
+                    )
+                """)
+            except:
+                pass  # Table might already exist
+            
+            # Create edge table
+            try:
+                self.kuzu.execute("""
+                    CREATE REL TABLE IF NOT EXISTS FLOWS(
+                        FROM Node TO Node,
+                        type STRING,
+                        condition STRING
+                    )
+                """)
+            except:
+                pass
+        except Exception as e:
+            print(f"⚠️  Kuzu init failed: {e}. Graph traversal disabled.")
+            self.kuzu = None
+            self.kuzu_db = None
     
     # =========================================================================
     # NODE OPERATIONS
