@@ -1,81 +1,77 @@
-// 10K Hamming Operations - C#
+/// LadybugDB Hamming Operations - C#
+/// Same XOR + POPCOUNT as Python, TypeScript, Rust, Go, C...
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
+using System.Text;
 
-namespace Firefly.Hamming;
-
-public static class HammingOps
+namespace LadybugDB
 {
-    public const int DIM = 10_000;
-    public const int DIM_U64 = 157;
-    public const ulong LAST_MASK = (1UL << 16) - 1;
-
-    public static int Popcount64(ulong x) => BitOperations.PopCount(x);
-
-    public static int Distance(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
+    public class HammingVector
     {
-        int total = 0;
-        for (int i = 0; i < DIM_U64; i++)
+        public const int DIM = 10_000;
+        public const int DIM_U64 = 157;
+        public const ulong LAST_MASK = (1UL << 16) - 1;
+
+        public ulong[] Data { get; }
+
+        public HammingVector() { Data = new ulong[DIM_U64]; }
+
+        public HammingVector(ulong[] data) { Data = data; }
+
+        public static HammingVector FromSeed(string seed)
         {
-            total += Popcount64(a[i] ^ b[i]);
-        }
-        return total;
-    }
-
-    public static double Similarity(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
-        => 1.0 - (double)Distance(a, b) / DIM;
-
-    public static ulong[] XorBind(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
-    {
-        var result = new ulong[DIM_U64];
-        for (int i = 0; i < DIM_U64; i++)
-        {
-            result[i] = a[i] ^ b[i];
-        }
-        result[DIM_U64 - 1] &= LAST_MASK;
-        return result;
-    }
-
-    public static int[] BatchDistance(ReadOnlySpan<ulong> query, ulong[][] corpus)
-    {
-        var results = new int[corpus.Length];
-        for (int i = 0; i < corpus.Length; i++)
-        {
-            results[i] = Distance(query, corpus[i]);
-        }
-        return results;
-    }
-
-    public readonly record struct Match(int Index, double Sim);
-
-    public static List<Match> Resonate(
-        ReadOnlySpan<ulong> query, 
-        ulong[][] corpus, 
-        double threshold = 0.5)
-    {
-        var results = new List<Match>();
-        for (int i = 0; i < corpus.Length; i++)
-        {
-            var sim = Similarity(query, corpus[i]);
-            if (sim >= threshold)
+            var data = new ulong[DIM_U64];
+            using var sha256 = SHA256.Create();
+            
+            for (int i = 0; i < DIM_U64; i++)
             {
-                results.Add(new Match(i, sim));
+                var input = Encoding.UTF8.GetBytes($"{seed}:{i}");
+                var hash = sha256.ComputeHash(input);
+                data[i] = BitConverter.ToUInt64(hash, 0);
             }
+            data[DIM_U64 - 1] &= LAST_MASK;
+            return new HammingVector(data);
         }
-        results.Sort((a, b) => b.Sim.CompareTo(a.Sim));
-        return results;
+
+        public HammingVector Xor(HammingVector other)
+        {
+            var result = new ulong[DIM_U64];
+            for (int i = 0; i < DIM_U64; i++)
+                result[i] = Data[i] ^ other.Data[i];
+            result[DIM_U64 - 1] &= LAST_MASK;
+            return new HammingVector(result);
+        }
+
+        public int Hamming(HammingVector other)
+        {
+            int total = 0;
+            for (int i = 0; i < DIM_U64; i++)
+                total += BitOperations.PopCount(Data[i] ^ other.Data[i]);
+            return total;
+        }
+
+        public double Similarity(HammingVector other) => 1.0 - (double)Hamming(other) / DIM;
+
+        public static HammingVector operator ^(HammingVector a, HammingVector b) => a.Xor(b);
     }
 
-    // AVX-512 optimized (if available)
-    public static int[] BatchDistanceAvx512(ReadOnlySpan<ulong> query, ulong[][] corpus)
+    public static class Ladybug
     {
-        if (!Avx512F.IsSupported) return BatchDistance(query, corpus);
-        
-        var results = new int[corpus.Length];
-        // AVX-512 implementation here
-        return results;
+        public static HammingVector Fingerprint(string name, string signature, string body)
+            => HammingVector.FromSeed($"{name}::{signature}::{body}");
+
+        public static List<(int Index, double Similarity)> Resonate(
+            HammingVector query, IList<HammingVector> corpus, double threshold = 0.5)
+        {
+            return corpus
+                .Select((v, i) => (Index: i, Similarity: query.Similarity(v)))
+                .Where(x => x.Similarity >= threshold)
+                .OrderByDescending(x => x.Similarity)
+                .ToList();
+        }
     }
 }
