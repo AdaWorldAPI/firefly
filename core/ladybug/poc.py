@@ -695,6 +695,16 @@ def run_all():
     except Exception as e:
         results.append(("L7: META", f"✗ {e}"))
     
+    # L8: ANTIPATTERNS
+    try:
+        from l8_antipatterns import poc_l8_antipatterns
+        if poc_l8_antipatterns():
+            results.append(("L8: ANTIPATTERNS", "✓"))
+        else:
+            results.append(("L8: ANTIPATTERNS", "partial"))
+    except Exception as e:
+        results.append(("L8: ANTIPATTERNS", f"✗ {e}"))
+    
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
