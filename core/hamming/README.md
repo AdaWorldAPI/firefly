@@ -1,97 +1,83 @@
-# Hamming Operations - Every Language
+# LadybugDB Hamming Operations
 
 **Resonance = XOR + POPCOUNT**
 
-Same operation, same result, every language.
+Same `HammingVector` class in 8 languages. Identical behavior guaranteed.
 
-## Supported Languages
+## Languages
 
-| Language | File | Notes |
+| Language | File | Class |
 |----------|------|-------|
-| Python | `hamming.py` | Reference implementation |
-| TypeScript | `hamming.ts` | Uses BigInt for 64-bit |
-| Rust | `hamming.rs` | Uses `count_ones()` intrinsic |
-| Go | `hamming.go` | Uses `bits.OnesCount64` |
-| C | `hamming.h` | Header-only, AVX-512 optional |
-| C++ | `hamming.hpp` | C++20 `std::popcount` |
-| Java | `Hamming.java` | `Long.bitCount()` |
-| C# | `Hamming.cs` | `BitOperations.PopCount` |
-| Ruby | `hamming.rb` | Pure Ruby |
-| Zig | `hamming.zig` | `@popCount` builtin |
-| WASM | `hamming.wat` | WebAssembly text format |
+| Python | `hamming.py` | `HammingVector` |
+| TypeScript | `hamming.ts` | `HammingVector` |
+| Rust | `hamming.rs` | `HammingVector` |
+| Go | `hamming.go` | `HammingVector` |
+| C | `hamming.h` | `HammingVector` |
+| C# | `Hamming.cs` | `HammingVector` |
+| Java | `HammingVector.java` | `HammingVector` |
+| Zig | `hamming.zig` | `HammingVector` |
 
-## Core Operations
+## API (Every Language)
 
 ```
 DIM = 10,000 bits
 DIM_U64 = 157 (uint64 array)
 
-hamming(a, b):
-    total = 0
-    for i in 0..157:
-        total += popcount(a[i] XOR b[i])
-    return total
+class HammingVector:
+    data: [157]uint64
+    
+    from_seed(seed: string) -> HammingVector  # Deterministic from SHA256
+    xor(other) -> HammingVector               # XOR bind
+    hamming(other) -> int                     # Distance = popcount(xor)
+    similarity(other) -> float                # 1.0 - hamming/10000
+    to_hex() -> string                        # Serialize
+    from_hex(hex) -> HammingVector            # Deserialize
 
-similarity(a, b):
-    return 1.0 - hamming(a, b) / 10000
-
-resonate(query, corpus, threshold):
-    return [(i, sim) for i, sim in enumerate(corpus) 
-            if similarity(query, corpus[i]) >= threshold]
+fingerprint(name, signature, body) -> HammingVector
+resonate(query, corpus, threshold) -> [(index, similarity)]
 ```
 
 ## Deterministic Guarantee
 
-**Same fingerprint + same operation = same result in EVERY language**
+**Same seed → same fingerprint in EVERY language**
 
 ```python
 # Python
-hamming(a, b)  # → 4823
+v = HammingVector.from_seed("my::code::def foo(): pass")
+print(v.to_hex())  # → "a1b2c3..."
 
-# Rust  
-hamming(&a, &b)  // → 4823
-
-# TypeScript
-hamming(a, b)  // → 4823
+# Rust
+let v = HammingVector::from_seed("my::code::def foo(): pass");
+println!("{}", v.to_hex());  // → "a1b2c3..." (IDENTICAL)
 
 # Go
-Hamming(&a, &b)  // → 4823
+v := FromSeed("my::code::def foo(): pass")
+fmt.Println(v.ToHex())  // → "a1b2c3..." (IDENTICAL)
 ```
 
-No floating point drift. No platform differences. Pure integer operations.
+## Core Algorithm
 
-## Usage
+```
+from_seed(seed):
+    for i in 0..157:
+        hash = SHA256(f"{seed}:{i}")
+        data[i] = little_endian_u64(hash[0:8])
+    data[156] &= LAST_MASK
+    return HammingVector(data)
 
-### Python
-```python
-from core.hamming import get_implementation
+hamming(a, b):
+    total = 0
+    for i in 0..157:
+        total += popcount(a.data[i] XOR b.data[i])
+    return total
 
-rust_code = get_implementation("rust")
-# Use rust_code in your build system
+similarity(a, b):
+    return 1.0 - hamming(a, b) / 10000
 ```
 
-### Direct Import
-```python
-from core.hamming.impl import hamming_py as hamming
+## Why Cross-Language?
 
-dist = hamming.distance(vec_a, vec_b)
-```
-
-## Performance
-
-| Language | Single Op | Batch 10K | Notes |
-|----------|-----------|-----------|-------|
-| C (AVX-512) | ~50 ns | ~15 ns/vec | Hardware POPCNT |
-| Rust | ~80 ns | ~20 ns/vec | LLVM vectorizes |
-| Go | ~100 ns | ~25 ns/vec | Good codegen |
-| Python+Numba | ~270 ns | ~20 ns/vec | JIT compiled |
-| TypeScript | ~500 ns | ~100 ns/vec | BigInt overhead |
-| Ruby | ~5 μs | ~1 μs/vec | Pure interpreted |
-| WASM | ~200 ns | ~50 ns/vec | Browser dependent |
-
-## Why Every Language?
-
-1. **Fingerprints are portable** - Generate in Python, use in Rust
-2. **Cross-platform search** - Browser WASM, server Rust, mobile Go
-3. **Consistent results** - No "it works differently on my machine"
-4. **Future-proof** - New language? Add implementation, same behavior
+1. **Generate fingerprint in Python → search in Rust**
+2. **Store hex in database → load in any language**
+3. **Browser WASM → Server Go → Mobile Swift** (coming)
+4. **Same code = same identity everywhere**
