@@ -132,45 +132,60 @@ class FireflyStore:
             
         kuzu_path = self.path / "kuzu"
         
-        # Kuzu needs to create the directory itself.
-        # If an empty/corrupted directory exists from a failed init, remove it.
-        if kuzu_path.exists():
-            # Check if it's a valid Kuzu database (has system files)
-            if not (kuzu_path / "catalog.wip").exists() and not (kuzu_path / "catalog").exists():
-                print(f"⚠️  Removing invalid Kuzu directory: {kuzu_path}")
-                shutil.rmtree(kuzu_path)
+        # Try to init Kuzu. If it fails, nuke the directory and retry once.
+        for attempt in range(2):
+            try:
+                if attempt > 0:
+                    print(f"🔄 Kuzu retry attempt {attempt + 1}...")
+                
+                self.kuzu_db = kuzu.Database(str(kuzu_path))
+                self.kuzu = kuzu.Connection(self.kuzu_db)
+                
+                # Create node table
+                try:
+                    self.kuzu.execute("""
+                        CREATE NODE TABLE IF NOT EXISTS Node(
+                            id STRING PRIMARY KEY,
+                            type STRING,
+                            executor STRING
+                        )
+                    """)
+                except:
+                    pass  # Table might already exist
+                
+                # Create edge table
+                try:
+                    self.kuzu.execute("""
+                        CREATE REL TABLE IF NOT EXISTS FLOWS(
+                            FROM Node TO Node,
+                            type STRING,
+                            condition STRING
+                        )
+                    """)
+                except:
+                    pass
+                
+                print(f"✅ Kuzu initialized at {kuzu_path}")
+                return  # Success!
+                
+            except Exception as e:
+                print(f"⚠️  Kuzu init failed: {e}")
+                
+                # On first failure, nuke and retry
+                if attempt == 0 and kuzu_path.exists():
+                    print(f"🗑️  Removing corrupted Kuzu directory: {kuzu_path}")
+                    try:
+                        shutil.rmtree(kuzu_path)
+                    except Exception as rm_err:
+                        print(f"   Failed to remove: {rm_err}")
+                        break
+                else:
+                    break
         
-        try:
-            self.kuzu_db = kuzu.Database(str(kuzu_path))
-            self.kuzu = kuzu.Connection(self.kuzu_db)
-            
-            # Create node table
-            try:
-                self.kuzu.execute("""
-                    CREATE NODE TABLE IF NOT EXISTS Node(
-                        id STRING PRIMARY KEY,
-                        type STRING,
-                        executor STRING
-                    )
-                """)
-            except:
-                pass  # Table might already exist
-            
-            # Create edge table
-            try:
-                self.kuzu.execute("""
-                    CREATE REL TABLE IF NOT EXISTS FLOWS(
-                        FROM Node TO Node,
-                        type STRING,
-                        condition STRING
-                    )
-                """)
-            except:
-                pass
-        except Exception as e:
-            print(f"⚠️  Kuzu init failed: {e}. Graph traversal disabled.")
-            self.kuzu = None
-            self.kuzu_db = None
+        # If we get here, Kuzu failed
+        print("⚠️  Kuzu disabled. Graph traversal unavailable.")
+        self.kuzu = None
+        self.kuzu_db = None
     
     # =========================================================================
     # NODE OPERATIONS
