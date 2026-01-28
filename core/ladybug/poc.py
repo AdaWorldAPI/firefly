@@ -687,6 +687,14 @@ def run_all():
     except Exception as e:
         results.append(("L6: NARS", f"✗ {e}"))
     
+    # L7: META-HEURISTICS
+    try:
+        from l7_meta import poc_l7_meta
+        poc_l7_meta()
+        results.append(("L7: META", "✓"))
+    except Exception as e:
+        results.append(("L7: META", f"✗ {e}"))
+    
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
