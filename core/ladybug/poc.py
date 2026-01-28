@@ -705,6 +705,22 @@ def run_all():
     except Exception as e:
         results.append(("L8: ANTIPATTERNS", f"✗ {e}"))
     
+    # L9: RL PATTERNS
+    try:
+        from l9_rl_patterns import poc_l9_rl_patterns
+        poc_l9_rl_patterns()
+        results.append(("L9: RL_PATTERNS", "✓"))
+    except Exception as e:
+        results.append(("L9: RL_PATTERNS", f"✗ {e}"))
+    
+    # L10: TRANSCENDENCE
+    try:
+        from l10_transcendence import poc_l10_transcendence
+        poc_l10_transcendence()
+        results.append(("L10: TRANSCENDENCE", "✓"))
+    except Exception as e:
+        results.append(("L10: TRANSCENDENCE", f"✗ {e}"))
+    
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
