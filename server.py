@@ -97,17 +97,27 @@ async def compile_source(request: Request):
     else:
         raise HTTPException(400, f"unsupported language: {language}")
 
-    parsed = compiler.parser.parse(source)
-    if not parsed:
-        raise HTTPException(422, "parse returned no models")
+    # Write source to a temp file for parsing (parser expects file path)
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.rb', delete=False) as f:
+        f.write(source)
+        temp_path = f.name
 
-    all_nodes = []
-    all_edges = []
+    try:
+        parsed = compiler.parser.parse_file(temp_path)
+        if not parsed:
+            raise HTTPException(422, "parse returned no model")
 
-    for model in parsed:
-        nodes, edges = compiler._compile_model(model)
+        all_nodes = []
+        all_edges = []
+
+        # parse_file returns a single model, not a list
+        nodes, edges = await compiler._compile_model(parsed)
         all_nodes.extend(nodes)
         all_edges.extend(edges)
+    finally:
+        import os
+        os.unlink(temp_path)
 
     # Persist
     for node in all_nodes:
@@ -154,8 +164,13 @@ async def execute_dto(request: Request):
 @app.get("/resonate/{query}")
 async def resonate(query: str, k: int = 10):
     """Find nodes similar to query by Hamming resonance."""
-    query_vec = project(query)
-    results = await store.find_similar_nodes(bytes(query_vec), k=k)
+    # Generate query vector from text (using hash-based projection for now)
+    import hashlib
+    h = hashlib.sha256(query.encode()).digest()
+    # Expand hash to 1024 floats for projection
+    expanded = np.frombuffer((h * 32)[:1024], dtype=np.float32)
+    query_vec = project(expanded)
+    results = await store.find_similar_nodes(query_vec, k=k)
 
     return {
         "query": query,

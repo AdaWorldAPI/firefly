@@ -38,12 +38,18 @@ class HammingVector:
         return HammingVector(result)
     
     def hamming(self, other: 'HammingVector') -> int:
-        """Hamming distance via XOR + POPCOUNT."""
+        """Hamming distance via XOR + POPCOUNT.
+
+        Uses numpy vectorized operations for performance.
+        Properly masks the last u64 to only count valid bits (10000 mod 64 = 16).
+        """
         xored = np.bitwise_xor(self.data, other.data)
-        total = 0
-        for x in xored:
-            total += bin(x).count('1')
-        return total
+        # Mask the last element to only count valid bits
+        xored_masked = xored.copy()
+        xored_masked[-1] &= LAST_MASK
+        # Vectorized popcount: view as bytes and use lookup
+        bytes_view = xored_masked.view(np.uint8)
+        return int(np.unpackbits(bytes_view).sum())
     
     def similarity(self, other: 'HammingVector') -> float:
         """Normalized similarity [0, 1]."""

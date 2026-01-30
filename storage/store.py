@@ -150,9 +150,11 @@ class FireflyStore:
                             executor STRING
                         )
                     """)
-                except:
-                    pass  # Table might already exist
-                
+                except Exception as e:
+                    # Log but continue - table might already exist
+                    if "already exists" not in str(e).lower():
+                        print(f"⚠️  Kuzu node table creation warning: {e}")
+
                 # Create edge table
                 try:
                     self.kuzu.execute("""
@@ -162,8 +164,10 @@ class FireflyStore:
                             condition STRING
                         )
                     """)
-                except:
-                    pass
+                except Exception as e:
+                    # Log but continue - table might already exist
+                    if "already exists" not in str(e).lower():
+                        print(f"⚠️  Kuzu edge table creation warning: {e}")
                 
                 print(f"✅ Kuzu initialized at {kuzu_path}")
                 return  # Success!
@@ -382,16 +386,29 @@ class FireflyStore:
             return []
     
     async def get_upstream_nodes(self, node_id: str, hops: int = 3) -> List[str]:
-        """Get nodes that feed into this node."""
+        """Get nodes that feed into this node.
+
+        Args:
+            node_id: The target node ID
+            hops: Maximum number of hops upstream (1-10, default 3)
+
+        Returns:
+            List of upstream node IDs
+        """
         if not self.kuzu:
             return []
-        
+
+        # Validate hops to prevent injection (must be positive integer 1-10)
+        hops = max(1, min(10, int(hops)))
+
         try:
+            # Note: hops must be validated above since Cypher doesn't support
+            # parameterized path lengths. The validation ensures it's safe.
             result = self.kuzu.execute(f"""
                 MATCH (upstream:Node)-[:FLOWS*1..{hops}]->(target:Node {{id: $id}})
                 RETURN DISTINCT upstream.id as id
             """, {"id": node_id})
-            
+
             df = result.get_as_df()
             return df['id'].tolist() if not df.empty else []
         except Exception as e:

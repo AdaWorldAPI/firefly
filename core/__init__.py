@@ -12,13 +12,29 @@ PACKED = 1250    # bytes (DIM / 8)
 
 # Deterministic projection matrix (seed=42 for reproducibility)
 _R = None
+_R_lock = None
+
+def _get_lock():
+    """Lazy-init threading lock."""
+    global _R_lock
+    if _R_lock is None:
+        import threading
+        _R_lock = threading.Lock()
+    return _R_lock
 
 def projection_matrix() -> np.ndarray:
-    """Lazy-load projection matrix: 1024 → 10K."""
+    """Lazy-load projection matrix: 1024 → 10K.
+
+    Thread-safe initialization using double-checked locking.
+    Uses isolated RandomState to avoid polluting global RNG.
+    """
     global _R
     if _R is None:
-        np.random.seed(42)
-        _R = np.random.randn(DIM, 1024).astype(np.float32) / 32
+        with _get_lock():
+            if _R is None:
+                # Use isolated RandomState instead of seeding global
+                rng = np.random.RandomState(42)
+                _R = rng.randn(DIM, 1024).astype(np.float32) / 32
     return _R
 
 
@@ -78,14 +94,29 @@ def random_vector() -> bytes:
 def role_vector(name: str) -> bytes:
     """
     Deterministic role vector from name.
-    
-    Used for binding I-Thou-It components.
+
+    Uses iterated hashing to produce independent bits across all 10K positions.
+    Each 64-bit chunk is derived from a unique hash, avoiding correlation.
     """
     import hashlib
-    h = hashlib.sha256(name.encode()).digest()
-    # Tile hash to fill 1250 bytes
-    repeated = (h * 40)[:PACKED]
-    return repeated
+    import struct
+
+    DIM_U64 = 157  # 10000 / 64, rounded up
+    data = bytearray(DIM_U64 * 8)
+
+    for i in range(DIM_U64):
+        # Each chunk gets a unique hash
+        h = hashlib.sha256(f"{name}:{i}".encode()).digest()
+        # Take first 8 bytes as uint64
+        data[i*8:(i+1)*8] = h[:8]
+
+    # Mask the last uint64 to only have valid bits (lower 16)
+    LAST_MASK = (1 << 16) - 1
+    last_val = struct.unpack('<Q', data[-8:])[0]
+    last_val &= LAST_MASK
+    data[-8:] = struct.pack('<Q', last_val)
+
+    return bytes(data[:PACKED])
 
 
 # Pre-computed role vectors for node components
