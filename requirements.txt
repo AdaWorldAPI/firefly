@@ -3,6 +3,7 @@
 
 # Vectors & Hamming
 numpy>=1.24.0
+numba>=0.58.0  # JIT compilation for near-native Hamming operations
 
 # Storage Trinity
 lancedb>=0.4.0
