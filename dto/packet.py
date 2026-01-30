@@ -60,25 +60,28 @@ class FireflyPacket:
     
     def pack_header(self) -> bytes:
         """
-        Pack routing header to exactly 64 bytes.
-        
-        Format:
+        Pack routing header to exactly 80 bytes.
+
+        Format (little-endian):
         - source_node: 32 bytes
         - target_node: 32 bytes
         - ttl: 1 byte
-        - priority: 1 byte  
+        - priority: 1 byte
         - flags: 2 bytes
         - sequence: 4 bytes
-        - checksum: 4 bytes
-        - reserved: 20 bytes
+        - checksum: 4 bytes (CRC32 of preceding 72 bytes)
+        - reserved: 4 bytes (padding to 80)
+        Total: 32+32+1+1+2+4+4+4 = 80 bytes
         """
+        import zlib
+
         # Ensure node addresses are exactly 32 bytes
         source = self.source_node[:32].ljust(32, b'\0')
         target = self.target_node[:32].ljust(32, b'\0')
-        
-        # Pack control fields
+
+        # Pack control fields (72 bytes)
         header = struct.pack(
-            "32s32sBBHI",
+            "<32s32sBBHI",
             source,
             target,
             self.ttl,
@@ -86,25 +89,40 @@ class FireflyPacket:
             self.flags,
             self.sequence
         )
-        
+
         # Add checksum (CRC32 of header so far)
-        import zlib
         checksum = zlib.crc32(header) & 0xFFFFFFFF
-        header += struct.pack("I", checksum)
-        
-        # Pad to 64 bytes
-        header += b'\0' * (64 - len(header))
-        
+        header += struct.pack("<I", checksum)
+
+        # Pad to 80 bytes
+        header += b'\0' * (80 - len(header))
+
         return header
-    
+
     @classmethod
     def unpack_header(cls, data: bytes) -> dict:
-        """Unpack routing header from 64 bytes."""
+        """Unpack routing header from 80 bytes.
+
+        Returns dict with parsed fields. Validates checksum.
+        Raises ValueError if data is too short or checksum fails.
+        """
+        import zlib
+
+        if len(data) < 80:
+            raise ValueError(f"Header requires at least 80 bytes, got {len(data)}")
+
+        # Unpack main header (72 bytes)
         source, target, ttl, priority, flags, sequence = struct.unpack(
-            "32s32sBBHI", data[:72]
+            "<32s32sBBHI", data[:72]
         )
-        checksum = struct.unpack("I", data[72:76])[0]
-        
+        # Checksum is at offset 72
+        stored_checksum = struct.unpack("<I", data[72:76])[0]
+
+        # Verify checksum
+        computed_checksum = zlib.crc32(data[:72]) & 0xFFFFFFFF
+        if stored_checksum != computed_checksum:
+            raise ValueError(f"Checksum mismatch: stored={stored_checksum:#x}, computed={computed_checksum:#x}")
+
         return {
             "source_node": source.rstrip(b'\0'),
             "target_node": target.rstrip(b'\0'),
@@ -112,7 +130,7 @@ class FireflyPacket:
             "priority": priority,
             "flags": flags,
             "sequence": sequence,
-            "checksum": checksum,
+            "checksum": stored_checksum,
         }
     
     def route_key(self) -> str:
@@ -213,7 +231,7 @@ class FireflyPacket:
     
     def __sizeof__(self) -> int:
         """Base size without variable context."""
-        return 64 + PACKED  # header + resonance
+        return 80 + PACKED  # header (80) + resonance (1250) = 1330 bytes
     
     def __repr__(self) -> str:
         target_short = self.target_node.hex()[:8] if self.target_node else "none"
