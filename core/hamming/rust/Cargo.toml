@@ -5,6 +5,8 @@ edition = "2021"
 description = "Firefly Core: 10K Hamming Resonance Engine"
 license = "MIT"
 repository = "https://github.com/AdaWorldAPI/firefly"
+keywords = ["hamming", "vector", "similarity", "content-addressable"]
+categories = ["algorithms", "data-structures"]
 
 [dependencies]
 sha2 = "0.10"
@@ -19,6 +21,10 @@ criterion = "0.5"
 [[bench]]
 name = "hamming_bench"
 harness = false
+
+[[example]]
+name = "standalone"
+path = "standalone.rs"
 
 [features]
 default = []
