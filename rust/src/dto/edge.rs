@@ -12,9 +12,8 @@
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
-use crate::error::{FireflyError, Result};
-use crate::node::FireflyNode;
-use crate::vector::HammingVector;
+use crate::{FireflyError, Result, HammingVector};
+use super::node::FireflyNode;
 
 /// Edge type in the execution graph.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
