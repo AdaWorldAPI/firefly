@@ -34,10 +34,31 @@ pub const LAST_MASK: u64 = (1 << 16) - 1;
 ///
 /// This implementation is designed to produce identical results to the Python
 /// implementation when using the same seeds and operations.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct HammingVector {
     /// The bit data stored as 157 u64 values.
     pub data: [u64; DIM_U64],
+}
+
+// Custom Serialize/Deserialize for HammingVector to handle large array
+impl Serialize for HammingVector {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Serialize as hex string for compactness and readability
+        serializer.serialize_str(&self.to_hex())
+    }
+}
+
+impl<'de> Deserialize<'de> for HammingVector {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        HammingVector::from_hex(&s).map_err(serde::de::Error::custom)
+    }
 }
 
 impl HammingVector {
@@ -57,7 +78,7 @@ impl HammingVector {
     /// # Example
     ///
     /// ```rust
-    /// use firefly_core::HammingVector;
+    /// use firefly::HammingVector;
     ///
     /// let v = HammingVector::from_seed("my_function::signature::body");
     /// ```

@@ -11,9 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use crate::error::{FireflyError, Result};
-use crate::vector::HammingVector;
-use crate::{bundle, roles};
+use crate::{FireflyError, Result, HammingVector, bundle, roles};
 
 /// Node executor type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

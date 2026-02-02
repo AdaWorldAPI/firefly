@@ -43,6 +43,18 @@ pub enum FireflyError {
     /// TTL expired.
     #[error("Packet TTL expired")]
     TtlExpired,
+
+    /// Storage error.
+    #[error("Storage error: {0}")]
+    StorageError(String),
+
+    /// Transport error.
+    #[error("Transport error: {0}")]
+    TransportError(String),
+
+    /// Execution error.
+    #[error("Execution error: {0}")]
+    ExecutionError(String),
 }
 
 impl From<serde_json::Error> for FireflyError {
