@@ -245,6 +245,72 @@ pub fn bundle(vectors: &[HammingVector]) -> HammingVector {
     HammingVector { data: result }
 }
 
+// =============================================================================
+// EXAMPLE MAIN
+// =============================================================================
+
+fn main() {
+    println!("=== Firefly Hamming Operations (Standalone Rust) ===\n");
+
+    // Create vectors from code identity
+    let v1 = fingerprint("validate_email", "(str) -> bool", "check format");
+    let v2 = fingerprint("validate_phone", "(str) -> bool", "check format");
+    let v3 = fingerprint("calculate_tax", "(f64) -> f64", "tax * rate");
+
+    println!("Created 3 fingerprints:");
+    println!("  v1 (validate_email): {:?}", v1);
+    println!("  v2 (validate_phone): {:?}", v2);
+    println!("  v3 (calculate_tax):  {:?}", v3);
+
+    // Similarity
+    println!("\nSimilarities:");
+    println!("  v1 <-> v2: {:.4} (both validators)", v1.similarity(&v2));
+    println!("  v1 <-> v3: {:.4} (different types)", v1.similarity(&v3));
+    println!("  v2 <-> v3: {:.4} (different types)", v2.similarity(&v3));
+
+    // XOR binding is self-inverse
+    println!("\nXOR binding demonstration:");
+    let bound = &v1 ^ &v2;
+    let recovered = &bound ^ &v2;
+    println!("  v1 ^ v2 = bound");
+    println!("  bound ^ v2 = recovered");
+    println!("  v1 == recovered: {}", v1 == recovered);
+
+    // Bundle (majority superposition)
+    println!("\nBundle (majority vote):");
+    let bundled = bundle(&[v1.clone(), v2.clone(), v3.clone()]);
+    println!("  bundled similarity to v1: {:.4}", bundled.similarity(&v1));
+    println!("  bundled similarity to v2: {:.4}", bundled.similarity(&v2));
+    println!("  bundled similarity to v3: {:.4}", bundled.similarity(&v3));
+
+    // Resonate (search)
+    println!("\nResonate search (threshold=0.4):");
+    let corpus = vec![v1.clone(), v2.clone(), v3.clone()];
+    let query = fingerprint("check_email", "(str) -> bool", "validate");
+    let results = resonate(&query, &corpus, 0.4);
+    for (idx, sim) in results {
+        let name = match idx {
+            0 => "validate_email",
+            1 => "validate_phone",
+            2 => "calculate_tax",
+            _ => "unknown",
+        };
+        println!("  {} (idx={}): similarity={:.4}", name, idx, sim);
+    }
+
+    // Performance info
+    println!("\nVector stats:");
+    println!("  Dimension: {} bits", DIM);
+    println!("  Packed size: {} bytes", PACKED);
+    println!("  v1 popcount: {} bits set", v1.popcount());
+
+    println!("\n=== Done ===");
+}
+
+// =============================================================================
+// TESTS
+// =============================================================================
+
 #[cfg(test)]
 mod tests {
     use super::*;
