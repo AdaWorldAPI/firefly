@@ -76,6 +76,20 @@ pub mod transport;
 pub mod reasoning;
 
 // =============================================================================
+// GEL MODULE (Graph Execution Language)
+// =============================================================================
+
+pub mod gel;
+pub use gel::{DistinguishedName, GelQuery, GelExecutor, ExecutionMode, Transaction};
+
+// =============================================================================
+// RUBBERDUCK MODULE (Self-Analyzing Audit System)
+// =============================================================================
+
+pub mod rubberduck;
+pub use rubberduck::{Rubberduck, AuditReport, CodeSmell, SmellType};
+
+// =============================================================================
 // CORE FUNCTIONS
 // =============================================================================
 

@@ -436,6 +436,21 @@ impl CodeGraph {
         self.nodes.get(&id)
     }
 
+    /// Get mutable node by ID.
+    pub fn get_node_mut(&mut self, id: i64) -> Option<&mut GraphNode> {
+        self.nodes.get_mut(&id)
+    }
+
+    /// Iterate over all nodes.
+    pub fn iter_nodes(&self) -> impl Iterator<Item = &GraphNode> {
+        self.nodes.values()
+    }
+
+    /// Iterate over all edges.
+    pub fn iter_edges(&self) -> impl Iterator<Item = &GraphEdge> {
+        self.edges.iter()
+    }
+
     /// Get all children of a node.
     pub fn get_children(&self, parent_id: i64) -> Vec<&GraphNode> {
         self.edges
